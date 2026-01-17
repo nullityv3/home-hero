@@ -11,20 +11,18 @@ import { Alert, Image, RefreshControl, ScrollView, StyleSheet, Text, TouchableOp
 interface HeroAcceptance {
   id: string;
   request_id: string;
-  hero_id: string;
+  profileId: string;
   accepted_at: string;
   chosen: boolean;
-  profiles: {
-    id: string;
-    full_name: string;
+  hero: {
+    profileId: string;
+    fullName: string;
     phone: string;
-    hero_profiles: Array<{
-      skills: string[];
-      hourly_rate: number;
-      rating: number;
-      completed_jobs: number;
-      profile_image_url: string | null;
-    }>;
+    skills: string[];
+    hourlyRate: number;
+    rating: number;
+    completedJobs: number;
+    profileImageUrl: string | null;
   };
 }
 
@@ -124,18 +122,15 @@ export default function ChooseHeroAcceptancesScreen() {
   };
 
   const renderHeroCard = (acceptance: HeroAcceptance) => {
-    const hero = acceptance.profiles;
-    const heroProfile = hero.hero_profiles?.[0];
-    
-    if (!heroProfile) return null;
+    const hero = acceptance.hero;
 
     return (
       <View key={acceptance.id} style={styles.heroCard}>
         <View style={styles.heroHeader}>
           <View style={styles.heroImageContainer}>
-            {heroProfile.profile_image_url ? (
+            {hero.profileImageUrl ? (
               <Image 
-                source={{ uri: heroProfile.profile_image_url }} 
+                source={{ uri: hero.profileImageUrl }} 
                 style={styles.heroImage}
               />
             ) : (
@@ -146,28 +141,28 @@ export default function ChooseHeroAcceptancesScreen() {
           </View>
           
           <View style={styles.heroInfo}>
-            <Text style={styles.heroName}>{hero.full_name}</Text>
+            <Text style={styles.heroName}>{hero.fullName}</Text>
             <View style={styles.ratingContainer}>
               <Ionicons name="star" size={16} color="#FFD700" />
-              <Text style={styles.rating}>{heroProfile.rating.toFixed(1)}</Text>
-              <Text style={styles.jobsCount}>({heroProfile.completed_jobs} jobs)</Text>
+              <Text style={styles.rating}>{hero.rating.toFixed(1)}</Text>
+              <Text style={styles.jobsCount}>({hero.completedJobs} jobs)</Text>
             </View>
-            <Text style={styles.hourlyRate}>${heroProfile.hourly_rate}/hour</Text>
+            <Text style={styles.hourlyRate}>${hero.hourlyRate}/hour</Text>
           </View>
         </View>
 
         {/* Skills */}
-        {heroProfile.skills && heroProfile.skills.length > 0 && (
+        {hero.skills && hero.skills.length > 0 && (
           <View style={styles.skillsContainer}>
             <Text style={styles.skillsTitle}>Skills:</Text>
             <View style={styles.skillsWrapper}>
-              {heroProfile.skills.slice(0, 3).map((skill, index) => (
+              {hero.skills.slice(0, 3).map((skill, index) => (
                 <View key={index} style={styles.skillBadge}>
                   <Text style={styles.skillText}>{skill}</Text>
                 </View>
               ))}
-              {heroProfile.skills.length > 3 && (
-                <Text style={styles.moreSkills}>+{heroProfile.skills.length - 3} more</Text>
+              {hero.skills.length > 3 && (
+                <Text style={styles.moreSkills}>+{hero.skills.length - 3} more</Text>
               )}
             </View>
           </View>
@@ -184,7 +179,7 @@ export default function ChooseHeroAcceptancesScreen() {
         {/* Choose Button */}
         <Button
           title="Choose This Hero"
-          onPress={() => handleChooseHero(hero.id, hero.full_name)}
+          onPress={() => handleChooseHero(acceptance.profileId, hero.fullName)}
           disabled={isChoosing}
           style={styles.chooseButton}
         />

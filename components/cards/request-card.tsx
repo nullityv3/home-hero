@@ -1,5 +1,6 @@
 import { ServiceRequest } from '@/types';
 import { Ionicons } from '@expo/vector-icons';
+import { router } from 'expo-router';
 import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
 interface RequestCardProps {

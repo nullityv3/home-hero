@@ -137,7 +137,7 @@ export default function CivilianHeroesScreen() {
       // Validate and transform data - ensure data is always an array
       const safeData = Array.isArray(data) ? data : [];
       const validatedHeroes = safeData.map(hero => ({
-        id: hero.id || '',
+        id: hero.profile_id || hero.profiles?.id || '',
         fullName: hero.full_name || 'Unknown Hero',
         rating: typeof hero.rating === 'number' ? hero.rating : 0,
         completedJobs: typeof hero.completed_jobs === 'number' ? hero.completed_jobs : 0,
