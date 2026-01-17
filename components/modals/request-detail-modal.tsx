@@ -1,7 +1,8 @@
+import { useAuthStore } from '@/stores/auth';
 import { useRequestsStore } from '@/stores/requests';
 import { ServiceRequest } from '@/types';
 import { Ionicons } from '@expo/vector-icons';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import {
     Alert,
     Modal,
