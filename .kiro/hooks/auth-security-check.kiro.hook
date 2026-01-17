@@ -1,0 +1,18 @@
+{
+  "enabled": true,
+  "name": "Authentication Security Validator",
+  "description": "Validates authentication flows to ensure no sensitive data like tokens or passwords are exposed in console logs or application logs",
+  "version": "1",
+  "when": {
+    "type": "fileEdited",
+    "patterns": [
+      "home/app/**/*.tsx",
+      "home/components/**/*.tsx",
+      "home/hooks/**/*.ts"
+    ]
+  },
+  "then": {
+    "type": "askAgent",
+    "prompt": "Review the modified authentication-related code for security vulnerabilities. Check for:\n1. Console.log statements that might expose passwords, tokens, or sensitive auth data\n2. Hardcoded credentials or API keys\n3. Unencrypted storage of sensitive authentication information\n4. Improper token handling or session management\n5. Authentication state exposed in component props or global state\n\nProvide specific recommendations to fix any security issues found and ensure the authentication flow follows security best practices."
+  }
+}

@@ -1,0 +1,11 @@
+{
+  "mcpServers": {
+    "supabase": {
+      "url": "https://mcp.supabase.com/mcp?project_ref=htdaqadkqolmpvvbbmez&read_only=false",
+      "disabled": false,
+      "autoApprove": [
+        "list_tables"
+      ]
+    }
+  }
+}

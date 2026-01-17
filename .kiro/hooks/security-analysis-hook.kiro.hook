@@ -1,0 +1,21 @@
+{
+  "enabled": true,
+  "name": "Security & Quality Analysis",
+  "description": "Analyzes TypeScript/React files for authentication/authorization issues, data integrity problems, UX concerns, performance bottlenecks, and monitoring gaps. always make sure they work.",
+  "version": "1",
+  "when": {
+    "type": "fileEdited",
+    "patterns": [
+      "**/*.tsx",
+      "**/*.ts",
+      "**/*.js",
+      "**/*.jsx"
+    ]
+  },
+  "then": {
+    "type": "askAgent",
+    "prompt": "Analyze this TypeScript/React file for the following security, integrity, and UX issues:\n\n**Authentication & Authorization:**\n- Check if any sensitive data (tokens, passwords, API keys) are logged to console or exposed in the code\n- Verify that authentication flows properly handle token expiry and refresh\n- Ensure RLS (Row Level Security) policies are being respected in database operations\n- Look for unauthorized route access patterns\n\n**Data Integrity & Validation:**\n- Validate that database operations match TypeScript interfaces/schemas\n- Check for missing required fields (user_id, job_status, etc.) in data operations\n- Verify foreign key integrity and cascading operations\n- Look for potential data validation gaps\n\n**UX/Frontend Issues:**\n- Check if components have all required props and proper error boundaries\n- Verify loading states and error handling for async operations\n- Look for navigation safety issues (role-based access violations)\n- Check for missing accessibility attributes\n\n**Performance Concerns:**\n- Identify potential unnecessary re-renders or missing memoization\n- Look for inefficient API call patterns that could be batched\n- Check for large assets or images that need optimization\n\n**Monitoring & Analytics:**\n- Verify proper error handling and reporting\n- Check if key user actions are being logged appropriately\n- Look for missing realtime sync patterns\n\nProvide specific recommendations for any issues found, including code examples where helpful. Focus on actionable improvements that align with the app's authentication, data integrity, and user experience requirements."
+  },
+  "workspaceFolderName": "home",
+  "shortName": "security-analysis-hook"
+}
