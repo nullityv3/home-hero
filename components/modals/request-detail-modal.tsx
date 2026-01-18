@@ -1,40 +1,21 @@
-import { useAuthStore } from '@/stores/auth';
 import { useRequestsStore } from '@/stores/requests';
 import { ServiceRequest } from '@/types';
 import { Ionicons } from '@expo/vector-icons';
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import {
-    Alert,
-    Modal,
-    ScrollView,
-    StyleSheet,
-    Text,
-    TouchableOpacity,
-    View
+  Alert,
+  Modal,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View
 } from 'react-native';
 
 interface RequestDetailModalProps {
   visible: boolean;
   request: ServiceRequest | null;
   onClose: () => void;
-}
-
-interface HeroAcceptance {
-  id: string;
-  request_id: string;
-  profileId: string;
-  accepted_at: string;
-  chosen: boolean;
-  hero: {
-    profileId: string;
-    fullName: string;
-    phone: string;
-    skills: string[];
-    hourlyRate: number;
-    rating: number;
-    completedJobs: number;
-    profileImageUrl: string | null;
-  };
 }
 
 const STATUS_CONFIG = {
@@ -66,36 +47,8 @@ const STATUS_CONFIG = {
 };
 
 export function RequestDetailModal({ visible, request, onClose }: RequestDetailModalProps) {
-  const { user } = useAuthStore();
-  const { cancelRequest, getRequestAcceptances, chooseHero } = useRequestsStore();
+  const { cancelRequest } = useRequestsStore();
   const [isCancelling, setIsCancelling] = useState(false);
-  const [showHeroSelection, setShowHeroSelection] = useState(false);
-  const [acceptances, setAcceptances] = useState<HeroAcceptance[]>([]);
-  const [isLoadingAcceptances, setIsLoadingAcceptances] = useState(false);
-  const [isChoosing, setIsChoosing] = useState(false);
-
-  // Load acceptances when modal opens and request is pending
-  useEffect(() => {
-    if (visible && request && (request.status === 'pending' || request.status === 'open') && !request.hero_id) {
-      loadAcceptances();
-    }
-  }, [visible, request?.id, request?.status]);
-
-  const loadAcceptances = async () => {
-    if (!request) return;
-    
-    setIsLoadingAcceptances(true);
-    try {
-      const result = await getRequestAcceptances(request.id);
-      if (result.success && result.data) {
-        setAcceptances(result.data as HeroAcceptance[]);
-      }
-    } catch (error) {
-      console.error('Failed to load acceptances:', error);
-    } finally {
-      setIsLoadingAcceptances(false);
-    }
-  };
 
   if (!request) return null;
 
@@ -114,50 +67,6 @@ export function RequestDetailModal({ visible, request, onClose }: RequestDetailM
   };
 
   const canCancel = request.status === 'pending' || request.status === 'assigned' || request.status === 'active';
-  const canChooseHero = (request.status === 'pending' || request.status === 'open') && !request.hero_id && acceptances.length > 0;
-
-  const handleChooseHeroPress = () => {
-    setShowHeroSelection(true);
-  };
-
-  const handleHeroSelect = async (profileId: string, heroName: string) => {
-    if (!user?.id || !request) return;
-
-    Alert.alert(
-      'Choose Hero',
-      `Are you sure you want to choose ${heroName} for this request?`,
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Choose',
-          style: 'default',
-          onPress: async () => {
-            setIsChoosing(true);
-            try {
-              const result = await chooseHero(request.id, profileId, user.id);
-              if (result.success) {
-                Alert.alert(
-                  'Hero Chosen!',
-                  `${heroName} has been assigned to your request.`,
-                  [{ text: 'OK', onPress: () => {
-                    setShowHeroSelection(false);
-                    onClose();
-                  }}]
-                );
-              } else {
-                Alert.alert('Error', result.error || 'Failed to choose hero');
-              }
-            } catch (error) {
-              Alert.alert('Error', 'An unexpected error occurred');
-            } finally {
-              setIsChoosing(false);
-            }
-          },
-        },
-      ]
-    );
-  };
-
   const handleCancelRequest = () => {
     Alert.alert(
       'Cancel Request',
@@ -282,20 +191,8 @@ export function RequestDetailModal({ visible, request, onClose }: RequestDetailM
           </View>
         </ScrollView>
 
-        {(canChooseHero || canCancel) && (
+        {canCancel && (
           <View style={styles.footer}>
-            {canChooseHero && (
-              <TouchableOpacity
-                style={[styles.chooseHeroButton, isLoadingAcceptances && styles.buttonDisabled]}
-                onPress={handleChooseHeroPress}
-                disabled={isLoadingAcceptances}
-              >
-                <Ionicons name="people-outline" size={20} color="#fff" />
-                <Text style={styles.chooseHeroButtonText}>
-                  {isLoadingAcceptances ? 'Loading...' : `Choose Hero (${acceptances.length})`}
-                </Text>
-              </TouchableOpacity>
-            )}
             {canCancel && (
               <TouchableOpacity
                 style={[styles.cancelButton, isCancelling && styles.buttonDisabled]}
@@ -311,105 +208,6 @@ export function RequestDetailModal({ visible, request, onClose }: RequestDetailM
           </View>
         )}
       </View>
-
-      {/* Hero Selection Modal */}
-      <Modal
-        visible={showHeroSelection}
-        animationType="slide"
-        presentationStyle="pageSheet"
-        onRequestClose={() => setShowHeroSelection(false)}
-      >
-        <View style={styles.heroSelectionContainer}>
-          <View style={styles.heroSelectionHeader}>
-            <TouchableOpacity 
-              onPress={() => setShowHeroSelection(false)} 
-              style={styles.closeButton}
-            >
-              <Ionicons name="close" size={28} color="#007AFF" />
-            </TouchableOpacity>
-            <Text style={styles.heroSelectionTitle}>Choose Your Hero</Text>
-            <View style={styles.headerSpacer} />
-          </View>
-
-          <ScrollView style={styles.heroSelectionContent} showsVerticalScrollIndicator={false}>
-            {acceptances.length === 0 ? (
-              <View style={styles.emptyState}>
-                <Ionicons name="people-outline" size={64} color="#C7C7CC" />
-                <Text style={styles.emptyStateText}>No Heroes Yet</Text>
-                <Text style={styles.emptyStateSubtext}>
-                  Heroes who accept your request will appear here
-                </Text>
-              </View>
-            ) : (
-              acceptances.map((acceptance) => (
-                <View key={acceptance.id} style={styles.heroCard}>
-                  <View style={styles.heroHeader}>
-                    <View style={styles.heroImageContainer}>
-                      {acceptance.hero.profileImageUrl ? (
-                        <Image
-                          source={{ uri: acceptance.hero.profileImageUrl }}
-                          style={styles.heroImage}
-                        />
-                      ) : (
-                        <View style={styles.heroImagePlaceholder}>
-                          <Ionicons name="person" size={32} color="#8E8E93" />
-                        </View>
-                      )}
-                    </View>
-                    <View style={styles.heroInfo}>
-                      <Text style={styles.heroName}>{acceptance.hero.fullName}</Text>
-                      <View style={styles.ratingContainer}>
-                        <Ionicons name="star" size={16} color="#FFD700" />
-                        <Text style={styles.rating}>{acceptance.hero.rating.toFixed(1)}</Text>
-                        <Text style={styles.jobsCount}>({acceptance.hero.completedJobs} jobs)</Text>
-                      </View>
-                      <Text style={styles.hourlyRate}>${acceptance.hero.hourlyRate}/hour</Text>
-                    </View>
-                  </View>
-
-                  {acceptance.hero.skills && acceptance.hero.skills.length > 0 && (
-                    <View style={styles.skillsContainer}>
-                      <Text style={styles.skillsTitle}>Skills:</Text>
-                      <View style={styles.skillsWrapper}>
-                        {acceptance.hero.skills.slice(0, 3).map((skill, index) => (
-                          <View key={index} style={styles.skillBadge}>
-                            <Text style={styles.skillText}>{skill}</Text>
-                          </View>
-                        ))}
-                        {acceptance.hero.skills.length > 3 && (
-                          <Text style={styles.moreSkills}>+{acceptance.hero.skills.length - 3} more</Text>
-                        )}
-                      </View>
-                    </View>
-                  )}
-
-                  <View style={styles.acceptanceInfo}>
-                    <Ionicons name="time-outline" size={16} color="#8E8E93" />
-                    <Text style={styles.acceptanceTime}>
-                      Accepted {new Date(acceptance.accepted_at).toLocaleDateString()}
-                    </Text>
-                  </View>
-
-                  <TouchableOpacity
-                    style={[styles.selectHeroButton, isChoosing && styles.buttonDisabled]}
-                    onPress={() => handleHeroSelect(acceptance.profileId, acceptance.hero.fullName)}
-                    disabled={isChoosing}
-                  >
-                    {isChoosing ? (
-                      <ActivityIndicator color="#fff" />
-                    ) : (
-                      <>
-                        <Ionicons name="checkmark-circle-outline" size={20} color="#fff" />
-                        <Text style={styles.selectHeroButtonText}>Choose This Hero</Text>
-                      </>
-                    )}
-                  </TouchableOpacity>
-                </View>
-              ))
-            )}
-          </ScrollView>
-        </View>
-      </Modal>
     </Modal>
   );
 }
@@ -539,20 +337,6 @@ const styles = StyleSheet.create({
     borderTopColor: '#E5E5EA',
     gap: 12,
   },
-  chooseHeroButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 8,
-    backgroundColor: '#007AFF',
-    paddingVertical: 14,
-    borderRadius: 12,
-  },
-  chooseHeroButtonText: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#fff',
-  },
   cancelButton: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -569,163 +353,5 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '600',
     color: '#fff',
-  },
-  // Hero Selection Modal Styles
-  heroSelectionContainer: {
-    flex: 1,
-    backgroundColor: '#F2F2F7',
-  },
-  heroSelectionHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    backgroundColor: '#fff',
-    borderBottomWidth: 1,
-    borderBottomColor: '#E5E5EA',
-  },
-  heroSelectionTitle: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: '#000',
-  },
-  heroSelectionContent: {
-    flex: 1,
-    paddingTop: 16,
-  },
-  heroCard: {
-    backgroundColor: '#fff',
-    borderRadius: 12,
-    padding: 16,
-    marginHorizontal: 16,
-    marginBottom: 16,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 2,
-  },
-  heroHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 16,
-  },
-  heroImageContainer: {
-    marginRight: 12,
-  },
-  heroImage: {
-    width: 60,
-    height: 60,
-    borderRadius: 30,
-  },
-  heroImagePlaceholder: {
-    width: 60,
-    height: 60,
-    borderRadius: 30,
-    backgroundColor: '#F2F2F7',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  heroInfo: {
-    flex: 1,
-  },
-  heroName: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: '#000',
-    marginBottom: 4,
-  },
-  ratingContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 4,
-  },
-  rating: {
-    fontSize: 14,
-    color: '#000',
-    marginLeft: 4,
-  },
-  jobsCount: {
-    fontSize: 14,
-    color: '#8E8E93',
-    marginLeft: 4,
-  },
-  hourlyRate: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#007AFF',
-  },
-  skillsContainer: {
-    marginBottom: 16,
-  },
-  skillsTitle: {
-    fontSize: 14,
-    color: '#8E8E93',
-    marginBottom: 8,
-  },
-  skillsWrapper: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    alignItems: 'center',
-  },
-  skillBadge: {
-    backgroundColor: '#E3F2FD',
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 4,
-    marginRight: 8,
-    marginBottom: 4,
-  },
-  skillText: {
-    fontSize: 12,
-    color: '#1976D2',
-  },
-  moreSkills: {
-    fontSize: 12,
-    color: '#8E8E93',
-    fontStyle: 'italic',
-  },
-  acceptanceInfo: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 16,
-  },
-  acceptanceTime: {
-    fontSize: 14,
-    color: '#8E8E93',
-    marginLeft: 4,
-  },
-  selectHeroButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 8,
-    backgroundColor: '#34C759',
-    paddingVertical: 12,
-    borderRadius: 8,
-  },
-  selectHeroButtonText: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#fff',
-  },
-  emptyState: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    padding: 64,
-    marginTop: 32,
-  },
-  emptyStateText: {
-    fontSize: 20,
-    fontWeight: '600',
-    color: '#000',
-    marginTop: 16,
-  },
-  emptyStateSubtext: {
-    fontSize: 16,
-    color: '#8E8E93',
-    textAlign: 'center',
-    marginTop: 8,
   },
 });

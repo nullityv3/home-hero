@@ -1,14 +1,16 @@
 import { useAuthStore } from '@/stores/auth';
 import { useRequestsStore } from '@/stores/requests';
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
-import { useMemo } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
 export default function RequestDetailsScreen() {
   const { requestId } = useLocalSearchParams<{ requestId?: string }>();
   const router = useRouter();
   const { user } = useAuthStore();
-  const { activeRequests, requestHistory } = useRequestsStore();
+  const { activeRequests, requestHistory, getRequestAcceptances } = useRequestsStore();
+  const [acceptanceCount, setAcceptanceCount] = useState(0);
+  const [isLoadingAcceptances, setIsLoadingAcceptances] = useState(false);
 
   const request = useMemo(() => {
     if (!requestId) return undefined;
@@ -20,6 +22,41 @@ export default function RequestDetailsScreen() {
   const isParticipant = !!request && !!user && (
     request.civilian_id === user.id || request.hero_id === user.id
   );
+  const isCivilianOwner = !!request && !!user && user.user_type === 'civilian' && request.civilian_id === user.id;
+  const canFetchAcceptances = !!request
+    && isCivilianOwner
+    && (request.status === 'pending' || request.status === 'open')
+    && !request.hero_id;
+  const canChooseHero = canFetchAcceptances && acceptanceCount > 0;
+
+  useEffect(() => {
+    let isActive = true;
+
+    const loadAcceptances = async () => {
+      if (!request || !canFetchAcceptances) {
+        if (isActive) setAcceptanceCount(0);
+        return;
+      }
+
+      setIsLoadingAcceptances(true);
+      try {
+        const result = await getRequestAcceptances(request.id);
+        if (isActive) {
+          setAcceptanceCount(result.success && result.data ? result.data.length : 0);
+        }
+      } catch (error) {
+        if (isActive) setAcceptanceCount(0);
+      } finally {
+        if (isActive) setIsLoadingAcceptances(false);
+      }
+    };
+
+    loadAcceptances();
+
+    return () => {
+      isActive = false;
+    };
+  }, [request?.id, request?.status, request?.hero_id, canFetchAcceptances, getRequestAcceptances]);
 
   return (
     <>
@@ -86,6 +123,29 @@ export default function RequestDetailsScreen() {
                     : request.location}
                 </Text>
               </>
+            )}
+
+            {canChooseHero && (
+              <View style={styles.chooseHeroSection}>
+                <View style={styles.chooseHeroHeader}>
+                  <Text style={styles.chooseHeroTitle}>Choose Hero</Text>
+                  <Text style={styles.chooseHeroSubtitle}>
+                    {acceptanceCount} hero{acceptanceCount !== 1 ? 'es' : ''} accepted your request
+                  </Text>
+                </View>
+                <TouchableOpacity
+                  style={[styles.chooseHeroButton, isLoadingAcceptances && styles.buttonDisabled]}
+                  onPress={() => router.push({
+                    pathname: '/(civilian)/choose-hero-acceptances',
+                    params: { requestId: request.id },
+                  })}
+                  disabled={isLoadingAcceptances}
+                >
+                  <Text style={styles.chooseHeroButtonText}>
+                    {isLoadingAcceptances ? 'Loading...' : `Choose Hero (${acceptanceCount})`}
+                  </Text>
+                </TouchableOpacity>
+              </View>
             )}
           </View>
         )}
@@ -160,5 +220,38 @@ const styles = StyleSheet.create({
   buttonText: {
     color: '#fff',
     fontWeight: '600',
+  },
+  buttonDisabled: {
+    opacity: 0.6,
+  },
+  chooseHeroSection: {
+    marginTop: 20,
+    paddingTop: 16,
+    borderTopWidth: 1,
+    borderTopColor: '#E5E5EA',
+  },
+  chooseHeroHeader: {
+    marginBottom: 12,
+  },
+  chooseHeroTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#000',
+  },
+  chooseHeroSubtitle: {
+    marginTop: 4,
+    fontSize: 14,
+    color: '#8E8E93',
+  },
+  chooseHeroButton: {
+    backgroundColor: '#34C759',
+    borderRadius: 10,
+    paddingVertical: 12,
+    alignItems: 'center',
+  },
+  chooseHeroButtonText: {
+    color: '#fff',
+    fontWeight: '600',
+    fontSize: 16,
   },
 });
